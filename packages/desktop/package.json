@@ -20,7 +20,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && node scripts/copy-prisma.mjs",
     "package:mac": "pnpm build && electron-builder --mac",
     "package:win": "pnpm build && electron-builder --win",
     "package:linux": "pnpm build && electron-builder --linux",
