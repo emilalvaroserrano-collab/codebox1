@@ -1,0 +1,12 @@
+{
+  "name": "eburon-codebox",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Eburon Codebox — AI coding agent merging Codex UI + Hermes self-learning + OpenCode engine",
+  "scripts": {
+    "dev": "pnpm --filter @eburon/desktop dev",
+    "build": "pnpm --filter @eburon/desktop build",
+    "package": "pnpm --filter @eburon/desktop package"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
