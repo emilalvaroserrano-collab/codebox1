@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eburon Codebox — Premium Workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-main: #111113;
+            --bg-sidebar: #161618;
+            --bg-input: #1e1e21;
+            --bg-card: #1a1a1d;
+            --bg-hover: rgba(255, 255, 255, 0.06);
+            --bg-active: rgba(255, 255, 255, 0.1);
+            --border-color: #27272b;
+            --text-primary: #f4f4f6;
+            --text-secondary: #8e8e93;
+            --text-muted: #5c5c61;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --code-bg: #151518;
+            --shadow: rgba(0, 0, 0, 0.4);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        [data-theme="light"] {
+            /* Light Theme */
+            --bg-main: #ffffff;
+            --bg-sidebar: #f4f4f7;
+            --bg-input: #efeff3;
+            --bg-card: #f8f8fb;
+            --bg-hover: rgba(0, 0, 0, 0.05);
+            --bg-active: rgba(0, 0, 0, 0.09);
+            --border-color: #e1e1e6;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #9ca3af;
+            --accent-blue: #2563eb;
+            --accent-purple: #7c3aed;
+            --accent-green: #059669;
+            --code-bg: #f3f3f6;
+            --shadow: rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box; margin: 0; padding: 0; user-select: none;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+        }
+
+        body {
+            font-family: var(--font-sans); background-color: var(--bg-main);
+            color: var(--text-primary); height: 100vh; display: flex; overflow: hidden;
+            font-size: 13px; letter-spacing: -0.01em;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px; background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color); display: flex; flex-direction: column;
+            transition: width 0.25s ease, opacity 0.25s ease; z-index: 10;
+        }
+        .sidebar.collapsed { width: 0; opacity: 0; pointer-events: none; border: none; }
+        .sidebar-header { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        
+        .window-controls { display: flex; gap: 8px; align-items: center; padding-bottom: 4px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background-color: #ff5f56; } .dot.yellow { background-color: #ffbd2e; } .dot.green { background-color: #27c93f; }
+
+        .nav-list { display: flex; flex-direction: column; gap: 2px; list-style: none; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-weight: 400;
+        }
+        .nav-item:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .nav-item.active { background-color: var(--bg-active); color: var(--text-primary); font-weight: 500; }
+        .nav-item svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.8; fill: none; flex-shrink: 0; }
+
+        /* Threads Section */
+        .threads-section { flex: 1; overflow-y: auto; padding: 10px 16px; display: flex; flex-direction: column; gap: 10px; }
+        .threads-section::-webkit-scrollbar { width: 4px; }
+        .threads-section::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .section-title { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; padding-left: 6px; }
+        
+        .project-header { display: flex; align-items: center; gap: 8px; padding: 6px 6px; color: var(--text-primary); font-weight: 500; border-radius: 6px; font-size: 13px; }
+        .project-header svg { width: 15px; height: 15px; stroke: var(--text-secondary); stroke-width: 1.8; fill: none; }
+        
+        .thread-list { display: flex; flex-direction: column; gap: 2px; padding-left: 8px; }
+        .thread-item {
+            display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px;
+            color: var(--text-secondary); cursor: pointer; font-size: 12.5px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; position: relative;
+        }
+        .thread-item:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .thread-item.active { color: var(--text-primary); background-color: var(--bg-active); font-weight: 500; }
+        .thread-item.active::before { content: ''; width: 6px; height: 6px; background-color: var(--accent-blue); border-radius: 50%; flex-shrink: 0; }
+        .empty-threads { padding: 16px 10px; text-align: center; color: var(--text-muted); font-size: 12px; border: 1px dashed var(--border-color); border-radius: 8px; margin-top: 4px; line-height: 1.5; }
+
+        /* --- BOTTOM SIDEBAR TOOLBAR (5 REQUESTED ICONS) --- */
+        .sidebar-footer {
+            padding: 12px 16px; border-top: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-sidebar);
+        }
+        .footer-icon-btn {
+            background: none; border: none; color: var(--text-secondary); cursor: pointer;
+            padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .footer-icon-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); transform: translateY(-1px); }
+        .footer-icon-btn svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.8; fill: none; }
+        .footer-icon-btn.logout:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+        .footer-icon-btn.active-voice { color: var(--accent-purple); background-color: rgba(139, 92, 246, 0.15); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; background-color: var(--bg-main); height: 100vh; }
+        .top-bar { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid transparent; }
+        .top-bar-left { display: flex; align-items: center; gap: 12px; }
+        .sidebar-toggle, .top-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-toggle:hover, .top-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .thread-title-display { font-size: 13.5px; font-weight: 500; color: var(--text-primary); }
+        .top-bar-right { display: flex; align-items: center; gap: 6px; }
+
+        .theme-toggle-btn {
+            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);
+            padding: 5px 10px; border-radius: 18px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500;
+        }
+        .theme-toggle-btn:hover { background-color: var(--bg-hover); border-color: var(--text-secondary); }
+        .theme-toggle-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+        /* --- CENTER AREA (Welcome & Chat) --- */
+        .content-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow-y: auto; padding: 20px 20px 150px 20px; }
+        .content-body::-webkit-scrollbar { width: 6px; }
+        .content-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .welcome-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; max-width: 420px; text-align: center; }
+        .welcome-logo { width: 56px; height: 56px; color: var(--text-primary); margin-bottom: 4px; }
+        .welcome-title { font-size: 22px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.02em; }
+        .welcome-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+
+        .model-selector-wrapper { position: relative; }
+        .model-selector { display: flex; align-items: center; gap: 8px; background-color: var(--bg-input); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; color: var(--text-primary); font-size: 13px; font-weight: 500; cursor: pointer; }
+        .model-selector:hover { background-color: var(--bg-hover); border-color: var(--text-secondary); }
+        .model-selector svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+        .model-dropdown {
+            position: absolute; top: 115%; left: 50%; transform: translateX(-50%); width: 210px;
+            background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 6px; box-shadow: 0 10px 25px var(--shadow); display: none; z-index: 100; flex-direction: column; gap: 2px;
+        }
+        .model-dropdown.show { display: flex; }
+        .model-option { padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: var(--text-secondary); font-size: 12.5px; }
+        .model-option:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .model-option.selected { color: var(--text-primary); background-color: rgba(59, 130, 246, 0.12); }
+
+        /* Chat View */
+        .chat-container { width: 100%; max-width: 760px; display: none; flex-direction: column; gap: 24px; padding-top: 20px; margin-top: auto; margin-bottom: auto; }
+        .message { display: flex; flex-direction: column; gap: 8px; line-height: 1.6; font-size: 14px; user-select: text; }
+        .message.user { align-self: flex-end; background-color: var(--bg-input); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 12px; max-width: 80%; color: var(--text-primary); }
+        .message.assistant { align-self: flex-start; width: 100%; color: var(--text-primary); }
+        .assistant-header { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+        
+        .code-box { background-color: var(--code-bg); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-top: 8px; font-family: var(--font-mono); font-size: 12.5px; }
+        .code-header { background-color: rgba(0,0,0,0.03); padding: 8px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 11px; }
+        .copy-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+        .copy-btn:hover { color: var(--text-primary); }
+        .code-content { padding: 14px; overflow-x: auto; color: var(--text-primary); line-height: 1.5; }
+        .kw { color: #c084fc; } .str { color: #4ade80; } .fn { color: #60a5fa; } .cm { color: #636369; }
+
+        /* --- FLOATING INPUT AREA --- */
+        .input-section {
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 0 20px 16px 20px;
+            background: linear-gradient(180deg, rgba(17,17,19,0) 0%, var(--bg-main) 35%);
+            display: flex; flex-direction: column; align-items: center; pointer-events: none;
+        }
+        .input-container {
+            width: 100%; max-width: 720px; background-color: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: 16px; padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 30px var(--shadow); pointer-events: auto;
+        }
+        .input-container:focus-within { border-color: var(--text-secondary); }
+        .chat-input { width: 100%; background: none; border: none; color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; outline: none; resize: none; min-height: 24px; max-height: 150px; user-select: text; }
+        .chat-input::placeholder { color: var(--text-muted); }
+        .input-actions { display: flex; align-items: center; justify-content: space-between; }
+        .action-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .action-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .send-btn { width: 28px; height: 28px; border-radius: 50%; background-color: var(--text-primary); color: var(--bg-main); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .send-btn:disabled { background-color: var(--border-color); color: var(--text-muted); cursor: default; }
+        .send-btn:not(:disabled):hover { transform: scale(1.05); }
+
+        .status-footer { width: 100%; max-width: 720px; display: flex; align-items: center; justify-content: space-between; padding: 10px 6px 0 6px; font-size: 11.5px; color: var(--text-secondary); pointer-events: auto; }
+        .mode-tabs { display: flex; gap: 14px; }
+        .mode-tab { cursor: pointer; position: relative; }
+        .mode-tab.active { color: var(--text-primary); font-weight: 500; }
+        .branch-info { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        .branch-info:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .branch-info svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+        /* --- DASHBOARD VIEWS (Automations, Skills, Settings) --- */
+        .dashboard-view { display: none; width: 100%; max-width: 860px; flex-direction: column; gap: 20px; padding: 30px 20px 100px 20px; margin: 0 auto; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+        .dashboard-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+        .btn-primary { background-color: var(--text-primary); color: var(--bg-main); border: none; padding: 8px 14px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 12.5px; }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* Skills View Styling */
+        .skills-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .search-box { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; width: 260px; }
+        .search-box input { background: none; border: none; outline: none; color: var(--text-primary); font-size: 12.5px; width: 100%; }
+        .filter-tabs { display: flex; gap: 6px; }
+        .filter-tab { padding: 5px 12px; border-radius: 16px; font-size: 12px; background: var(--bg-input); color: var(--text-secondary); cursor: pointer; border: 1px solid transparent; }
+        .filter-tab.active { background: var(--text-primary); color: var(--bg-main); font-weight: 500; }
+        
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+        .skill-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .skill-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .skill-info { display: flex; gap: 12px; align-items: center; }
+        .skill-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); flex-shrink: 0; }
+        .skill-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+        .skill-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--bg-input); color: var(--text-secondary); font-weight: 500; text-transform: uppercase; margin-left: 6px; }
+        .skill-desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+        
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); border-radius: 20px; transition: .2s; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .2s; }
+        input:checked + .slider { background-color: var(--accent-blue); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* Settings View Styling */
+        .settings-layout { display: flex; gap: 24px; min-height: 480px; }
+        .settings-nav { width: 180px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 16px; }
+        .settings-nav-item { padding: 8px 12px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .settings-nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .settings-nav-item.active { background: var(--bg-active); color: var(--text-primary); font-weight: 500; }
+        .settings-content { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .settings-group { display: flex; flex-direction: column; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+        .settings-group-title { font-weight: 600; font-size: 14px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+        .setting-label { display: flex; flex-direction: column; gap: 2px; }
+        .setting-label span { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+        .setting-label small { font-size: 11.5px; color: var(--text-muted); }
+        .setting-input { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; outline: none; font-size: 12.5px; width: 180px; font-family: var(--font-mono); }
+
+        /* --- PREMIUM DRAGGABLE 70PX VOICE ORB --- */
+        .voice-orb-container {
+            position: fixed; bottom: 90px; right: 40px; width: 70px; height: 70px;
+            z-index: 9999; cursor: grab; display: none; align-items: center; justify-content: center;
+            touch-action: none;
+        }
+        .voice-orb-container:active { cursor: grabbing; }
+        .voice-orb-container.show { display: flex; animation: orbAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes orbAppear {
+            0% { transform: scale(0.2) translateY(30px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .voice-orb {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
+            position: relative; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.6), 0 0 50px rgba(59, 130, 246, 0.4);
+            animation: rotateOrb 6s linear infinite;
+        }
+        
+        .voice-orb::before {
+            content: ''; position: absolute; inset: 2px; border-radius: 50%;
+            background: #0d0d0f; z-index: 1; transition: background 0.3s;
+        }
+
+        .voice-orb::after {
+            content: ''; position: absolute; inset: -6px; border-radius: 50%;
+            background: inherit; filter: blur(10px); opacity: 0.7; z-index: 0;
+            animation: pulseGlow 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes rotateOrb { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulseGlow { 0% { transform: scale(0.95); opacity: 0.5; } 100% { transform: scale(1.1); opacity: 0.85; } }
+
+        /* Inner Energy Core */
+        .orb-core {
+            width: 38px; height: 38px; border-radius: 50%; z-index: 2;
+            background: radial-gradient(circle, #a78bfa 0%, #3b82f6 100%);
+            box-shadow: 0 0 15px #a78bfa;
+            animation: corePulse 1.8s ease-in-out infinite alternate;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        @keyframes corePulse {
+            0% { transform: scale(0.85); box-shadow: 0 0 10px #3b82f6; }
+            100% { transform: scale(1.1); box-shadow: 0 0 20px #c084fc; }
+        }
+
+        /* WebSocket Connected State (Emerald Green) */
+        .voice-orb-container.connected .voice-orb {
+            background: conic-gradient(from 0deg, #10b981, #06b6d4, #3b82f6, #10b981);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.8);
+            animation: rotateOrb 2s linear infinite;
+        }
+        .voice-orb-container.connected .orb-core {
+            background: radial-gradient(circle, #6ee7b7 0%, #10b981 100%);
+            box-shadow: 0 0 20px #6ee7b7;
+        }
+
+        /* Floating Orb Tooltip */
+        .orb-status-tooltip {
+            position: absolute; top: -36px; white-space: nowrap;
+            background: rgba(17, 17, 19, 0.9); border: 1px solid var(--border-color);
+            padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+            color: var(--text-primary); pointer-events: none; opacity: 0;
+            transition: opacity 0.2s, transform 0.2s; transform: translateY(4px);
+        }
+        .voice-orb-container:hover .orb-status-tooltip { opacity: 1; transform: translateY(0); }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; right: 20px; background-color: var(--bg-input);
+            border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px;
+            color: var(--text-primary); font-size: 12.5px; box-shadow: 0 10px 25px var(--shadow);
+            display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(-10px);
+            pointer-events: none; z-index: 10000;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span id="toast-msg">Action successful</span>
+    </div>
+
+    <!-- DRAGGABLE 70PX PREMIUM VOICE ORB -->
+    <div id="voice-orb" class="voice-orb-container" onmousedown="startDrag(event)" ontouchstart="startDrag(event)">
+        <div class="orb-status-tooltip" id="orb-tooltip">Voice Agent: Idle (Click to connect)</div>
+        <div class="voice-orb">
+            <div class="orb-core">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="window-controls">
+                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item active" onclick="switchNav('new')">
+                    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    <span>New thread</span>
+                </li>
+                <li class="nav-item" onclick="switchNav('automations')">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Automations</span>
+                </li>
+                <li class="nav-item" onclick="switchNav('skills')">
+                    <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    <span>Skills & Capabilities</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="threads-section">
+            <div class="section-title">Threads</div>
+            <div class="project-header">
+                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span>Codebox Workspace</span>
+            </div>
+            <div class="thread-list" id="thread-list">
+                <div class="empty-threads" id="empty-state">No active threads yet.<br>Start typing below to begin.</div>
+            </div>
+        </div>
+
+        <!-- BOTTOM SIDEBAR FOOTER (5 REQUESTED ICONS) -->
+        <div class="sidebar-footer">
+            <button class="footer-icon-btn" title="Settings" onclick="switchNav('settings')">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <button class="footer-icon-btn" title="Share Workspace" onclick="showToast('Workspace share link copied to clipboard')">
+                <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
+            <button class="footer-icon-btn" title="Copy to clipboard" onclick="showToast('Workspace path copied: ~/Projects/codebox')">
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button class="footer-icon-btn" id="voice-btn" title="Voice Agent Orb (Draggable)" onclick="toggleVoiceOrb(this)">
+                <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <button class="footer-icon-btn logout" title="Log out" onclick="showToast('Logging out of Eburon Codebox...')">
+                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                </button>
+                <span class="thread-title-display" id="header-title">New thread</span>
+            </div>
+            <div class="top-bar-right">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle Theme">
+                    <svg id="theme-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <span id="theme-text">Light</span>
+                </button>
+                <button class="top-btn" title="Split Editor View" onclick="showToast('Split editor pane initialized')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-body" id="main-view">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcome-screen">
+                <svg class="welcome-logo" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M48 44H18c-6.6 0-12-5.4-12-12 0-5.8 4.2-10.7 9.8-11.8C17.4 13.5 23.8 8 31.5 8c8.5 0 15.5 6.3 16.4 14.5C53.5 23.7 58 28.3 58 34c0 5.5-4.5 10-10 10z"/>
+                    <path d="M25 29l5 5-5 5"/><line x1="33" y1="39" x2="41" y2="39"/>
+                </svg>
+                <h1 class="welcome-title">Let's build</h1>
+                <p class="welcome-sub">Eburon Codebox 4.5 is ready. Start typing or trigger voice orb.</p>
+                
+                <div class="model-selector-wrapper">
+                    <button class="model-selector" onclick="toggleModelDropdown(event)">
+                        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <span id="current-model">Eburon Codebox v4.5</span>
+                        <svg viewBox="0 0 24 24" style="width:12px; height:12px;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="model-dropdown" id="model-dropdown">
+                        <div class="model-option selected" onclick="selectModel('Eburon Codebox v4.5', this)"><span>Eburon Codebox v4.5</span><span style="font-size:10px; color:var(--accent-blue);">Default</span></div>
+                        <div class="model-option" onclick="selectModel('Eburon Mini (Fast)', this)"><span>Eburon Mini (Fast)</span></div>
+                        <div class="model-option" onclick="selectModel('Claude 3.7 Sonnet', this)"><span>Claude 3.7 Sonnet</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Chat View -->
+            <div class="chat-container" id="chat-container"></div>
+
+            <!-- SKILLS DASHBOARD (Codex Style) -->
+            <div class="dashboard-view" id="skills-view">
+                <div class="dashboard-header">
+                    <div>
+                        <div class="dashboard-title">Skills & Capabilities</div>
+                        <div style="font-size:12.5px; color:var(--text-secondary); margin-top:2px;">Configure specialized instructions,AST parsers, and custom tools for Codebox.</div>
+                    </div>
+                    <button class="btn-primary" onclick="showToast('Custom skill creation modal opened')">+ Create Skill</button>
+                </div>
+                
+                <div class="skills-toolbar">
+                    <div class="search-box">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" placeholder="Filter skills...">
+                    </div>
+                    <div class="filter-tabs">
+                        <span class="filter-tab active">All (6)</span>
+                        <span class="filter-tab">System (3)</span>
+                        <span class="filter-tab">Custom (3)</span>
+                    </div>
+                </div>
+
+                <div class="skills-grid">
+                    <div class="skill-card">
+                        <div class="skill-card-top">
+                            <div class="skill-info">
+                                <div class="skill-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                                <div><span class="skill-name">AST Codebase Indexer</span><span class="skill-badge">System</span></div>
+                            </div>
+                            <label class="switch"><input type="checkbox" checked onchange="showToast('AST Indexer toggled')"><span class="slider"></span></label>
+                        </div>
+                        <div class="skill-desc">Automatically builds vector embeddings and semantic syntax trees across your local repository for ultra-fast code retrieval.</div>
+                    </div>
+
+                    <div class="skill-card">
+                        <div class="skill-card-top">
+                            <div class="skill-info">
+                                <div class="skill-icon" style="color:#10b981; background:rgba(16,185,129,0.1);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                                <div><span class="skill-name">CVE Security Scanner</span><span class="skill-badge">System</span></div>
+                            </div>
+                            <label class="switch"><input type="checkbox" checked onchange="showToast('Security Scanner toggled')"><span class="slider"></span></label>
+                        </div>
+                        <div class="skill-desc">Scans code modifications in real-time for SQL injections, XSS vulnerabilities, and outdated package dependencies.</div>
+                    </div>
+
+                    <div class="skill-card">
+                        <div class="skill-card-top">
+                            <div class="skill-info">
+                                <div class="skill-icon" style="color:#8b5cf6; background:rgba(139,92,246,0.1);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg></div>
+                                <div><span class="skill-name">React 19 Action Migrator</span><span class="skill-badge" style="color:#8b5cf6;">Custom</span></div>
+                            </div>
+                            <label class="switch"><input type="checkbox" checked onchange="showToast('React 19 Migrator toggled')"><span class="slider"></span></label>
+                        </div>
+                        <div class="skill-desc">Specialized refactoring rules converting legacy useEffect hooks and class components directly into React 19 Server Actions.</div>
+                    </div>
+
+                    <div class="skill-card">
+                        <div class="skill-card-top">
+                            <div class="skill-info">
+                                <div class="skill-icon" style="color:#ec4899; background:rgba(236,72,153,0.1);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg></div>
+                                <div><span class="skill-name">Figma to Tailwind UI</span><span class="skill-badge" style="color:#8b5cf6;">Custom</span></div>
+                            </div>
+                            <label class="switch"><input type="checkbox" onchange="showToast('Figma UI Builder toggled')"><span class="slider"></span></label>
+                        </div>
+                        <div class="skill-desc">Translates Figma JSON design tokens and layout hierarchies into accessible, responsive Tailwind CSS JSX structures.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS DASHBOARD (Codex Style) -->
+            <div class="dashboard-view" id="settings-view">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">Codebox Preferences</div>
+                    <button class="btn-primary" onclick="showToast('Settings saved successfully')">Save Changes</button>
+                </div>
+                <div class="settings-layout">
+                    <div class="settings-nav">
+                        <div class="settings-nav-item active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> General</div>
+                        <div class="settings-nav-item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Models & API Keys</div>
+                        <div class="settings-nav-item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg> Worktrees & Git</div>
+                        <div class="settings-nav-item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Appearance</div>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-group">
+                            <div class="settings-group-title">Workspace Configuration</div>
+                            <div class="setting-row">
+                                <div class="setting-label"><span>Default Project Directory</span><small>Base root path for Eburon code indexing</small></div>
+                                <input type="text" class="setting-input" value="~/Projects/codebox" readonly>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label"><span>Auto-Save Conversations</span><small>Persist thread history in SQLite database</small></div>
+                                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <div class="settings-group-title">AI Engine & Voice WebSocket</div>
+                            <div class="setting-row">
+                                <div class="setting-label"><span>Voice Orb WebSocket URL</span><small>Endpoint for real-time streaming voice agent</small></div>
+                                <input type="text" class="setting-input" style="width:220px;" value="wss://voice.eburon.ai/v1/stream">
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label"><span>Max Token Context Window</span><small>Allocated memory buffer per thread</small></div>
+                                <input type="text" class="setting-input" style="width:100px;" value="128,000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Automations Dashboard -->
+            <div class="dashboard-view" id="automations-view">
+                <div class="dashboard-header"><div class="dashboard-title">Automations & Background Tasks</div><button class="btn-primary" onclick="showToast('Automation wizard opened')">+ Create Automation</button></div>
+                <div style="padding:40px; text-align:center; color:var(--text-muted); border:1px dashed var(--border-color); border-radius:12px;">No automated background watchers active. Click create to add Git pre-commit hooks.</div>
+            </div>
+        </div>
+
+        <!-- Floating Bottom Input Section -->
+        <footer class="input-section">
+            <div class="input-container">
+                <textarea class="chat-input" id="chat-input" placeholder="Ask anything or click mic for voice orb..." rows="1" oninput="handleInput(this)" onkeydown="handleKeydown(event)"></textarea>
+                <div class="input-actions">
+                    <button class="action-btn" title="Attach context or file" onclick="showToast('File attachment modal opened')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled title="Send instruction">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="status-footer">
+                <div class="mode-tabs">
+                    <span class="mode-tab active" onclick="switchMode(this)">Local</span>
+                    <span class="mode-tab" onclick="switchMode(this)">Worktree</span>
+                    <span class="mode-tab" onclick="switchMode(this)">Cloud</span>
+                </div>
+                <div class="branch-info" onclick="showToast('Git checkout: eb/codebox-main')">
+                    <svg viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                    <span>eb/codebox-main</span>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        let isLightMode = false;
+        let threadCount = 0;
+        let isDragging = false;
+        let dragStartX, dragStartY;
+        let initialOrbX, initialOrbY;
+        let hasDragged = false;
+        let isOrbConnected = false;
+
+        // Toggle Light / Dark Mode
+        function toggleTheme() {
+            isLightMode = !isLightMode;
+            const themeText = document.getElementById('theme-text');
+            const themeIcon = document.getElementById('theme-icon');
+            if (isLightMode) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeText.innerText = 'Dark';
+                themeIcon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+                showToast('Switched to Light Mode');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeText.innerText = 'Light';
+                themeIcon.innerHTML = `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
+                showToast('Switched to Dark Mode');
+            }
+        }
+
+        // Toggle left sidebar
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+        // --- PREMIUM 70PX VOICE ORB DRAG & WEBSOCKET LOGIC ---
+        function toggleVoiceOrb(btn) {
+            const orb = document.getElementById('voice-orb');
+            btn.classList.toggle('active-voice');
+            if (orb.classList.contains('show')) {
+                orb.classList.remove('show');
+                showToast('Voice Agent Orb minimized');
+            } else {
+                orb.classList.add('show');
+                showToast('Voice Agent Orb spawned (Draggable)');
+            }
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            hasDragged = false;
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            dragStartX = clientX;
+            dragStartY = clientY;
+            
+            const orb = document.getElementById('voice-orb');
+            const rect = orb.getBoundingClientRect();
+            initialOrbX = rect.left;
+            initialOrbY = rect.top;
+            
+            // Override CSS bottom/right to left/top for absolute positioning drag physics
+            orb.style.bottom = 'auto';
+            orb.style.right = 'auto';
+            orb.style.left = initialOrbX + 'px';
+            orb.style.top = initialOrbY + 'px';
+
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchmove', onDrag, { passive: false });
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!isDragging) return;
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            const dx = clientX - dragStartX;
+            const dy = clientY - dragStartY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasDragged = true;
+            }
+
+            const orb = document.getElementById('voice-orb');
+            let newLeft = initialOrbX + dx;
+            let newTop = initialOrbY + dy;
+
+            // Keep within window boundaries
+            newLeft = Math.max(10, Math.min(window.innerWidth - 80, newLeft));
+            newTop = Math.max(10, Math.min(window.innerHeight - 80, newTop));
+
+            orb.style.left = newLeft + 'px';
+            orb.style.top = newTop + 'px';
+            e.preventDefault();
+        }
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchmove', onDrag);
+            document.removeEventListener('touchend', endDrag);
+
+            // If tapped without dragging, trigger WebSocket connection state!
+            if (!hasDragged) {
+                toggleOrbWebSocket();
+            }
+        }
+
+        function toggleOrbWebSocket() {
+            const orb = document.getElementById('voice-orb');
+            const tooltip = document.getElementById('orb-tooltip');
+            isOrbConnected = !isOrbConnected;
+
+            if (isOrbConnected) {
+                tooltip.innerText = "Connecting to wss://voice.eburon.ai...";
+                showToast("Connecting to Voice WebSocket...");
+                setTimeout(() => {
+                    if (isOrbConnected) {
+                        orb.classList.add('connected');
+                        tooltip.innerText = "Listening... (Connected to Codebox WS)";
+                        showToast("Voice Agent WebSocket Connected! Speak now.");
+                    }
+                }, 800);
+            } else {
+                orb.classList.remove('connected');
+                tooltip.innerText = "Voice Agent: Idle (Click to connect)";
+                showToast("Voice WebSocket disconnected");
+            }
+        }
+
+        // Switch main views
+        function switchNav(viewType) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if (event && event.currentTarget && event.currentTarget.classList) {
+                event.currentTarget.classList.add('active');
+            }
+            document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('automations-view').style.display = 'none';
+            document.getElementById('skills-view').style.display = 'none';
+            document.getElementById('settings-view').style.display = 'none';
+
+            if (viewType === 'new') {
+                document.getElementById('welcome-screen').style.display = 'flex';
+                document.getElementById('header-title').innerText = 'New thread';
+            } else if (viewType === 'automations') {
+                document.getElementById('automations-view').style.display = 'flex';
+                document.getElementById('header-title').innerText = 'Automations';
+            } else if (viewType === 'skills') {
+                document.getElementById('skills-view').style.display = 'flex';
+                document.getElementById('header-title').innerText = 'Skills & Capabilities';
+            } else if (viewType === 'settings') {
+                document.getElementById('settings-view').style.display = 'flex';
+                document.getElementById('header-title').innerText = 'Preferences';
+            }
+        }
+
+        // Auto-expand textarea & enable send button
+        function handleInput(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+            document.getElementById('send-btn').disabled = el.value.trim() === '';
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!document.getElementById('send-btn').disabled) sendMessage();
+            }
+        }
+
+        // Send message & dynamically create thread
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (document.getElementById('welcome-screen').style.display !== 'none') {
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'flex';
+            }
+
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            if (document.getElementById('header-title').innerText === 'New thread') {
+                threadCount++;
+                const shortTitle = text.slice(0, 24) + (text.length > 24 ? '...' : '');
+                document.getElementById('header-title').innerText = shortTitle;
+
+                const threadList = document.getElementById('thread-list');
+                const newThreadItem = document.createElement('div');
+                newThreadItem.className = 'thread-item active';
+                newThreadItem.innerHTML = `<span>${shortTitle}</span>`;
+                newThreadItem.onclick = function() {
+                    document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('header-title').innerText = shortTitle;
+                };
+
+                document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
+                threadList.prepend(newThreadItem);
+            }
+
+            appendMessage('user', text);
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('send-btn').disabled = true;
+
+            const body = document.getElementById('main-view');
+            body.scrollTop = body.scrollHeight;
+
+            setTimeout(() => {
+                const aiReply = "Codebox AST indexer processed your request. Here is the refactored architecture snippet:";
+                const sampleCode = `<span class="kw">import</span> { CodeboxAgent } <span class="kw">from</span> <span class="str">'@eburon/codebox'</span>;\n\n<span class="cm">// Automatically utilizing active system skills</span>\n<span class="kw">const</span> agent = <span class="kw">new</span> <span class="fn">CodeboxAgent</span>({\n  model: <span class="str">'eburon-4.5-live'</span>,\n  astIndexing: <span class="kw">true</span>\n});\n\n<span class="kw">await</span> agent.<span class="fn">executeRefactor</span>({ target: <span class="str">'src/components/'</span> });`;
+                appendMessage('assistant', aiReply, sampleCode);
+                body.scrollTop = body.scrollHeight;
+            }, 700);
+        }
+
+        function appendMessage(role, text, code = null) {
+            const chatContainer = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+
+            if (role === 'assistant') {
+                let html = `
+                    <div class="assistant-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <span>Eburon Codebox</span>
+                    </div><div>${text}</div>
+                `;
+                if (code) {
+                    html += `
+                        <div class="code-box">
+                            <div class="code-header"><span>typescript</span>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
+                                </button>
+                            </div><pre class="code-content"><code>${code}</code></pre>
+                        </div>
+                    `;
+                }
+                msgDiv.innerHTML = html;
+            } else { msgDiv.innerText = text; }
+            chatContainer.appendChild(msgDiv);
+        }
+
+        function toggleModelDropdown(e) { e.stopPropagation(); document.getElementById('model-dropdown').classList.toggle('show'); }
+        function selectModel(name, el) {
+            document.getElementById('current-model').innerText = name;
+            document.querySelectorAll('.model-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected'); showToast(`Model set to ${name}`);
+        }
+        function switchMode(el) {
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active'); showToast(`Environment switched to ${el.innerText}`);
+        }
+        function copyCode(btn) {
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+            setTimeout(() => { btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`; }, 2000);
+        }
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.add('show');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }
+        window.addEventListener('click', () => { document.getElementById('model-dropdown').classList.remove('show'); });
+    </script>
+</body>
+</html>

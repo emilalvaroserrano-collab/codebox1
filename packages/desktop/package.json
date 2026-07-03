@@ -1,0 +1,49 @@
+{
+  "name": "@eburon/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist dist-electron release",
+    "compile:main": "node scripts/build-main.mjs",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate",
+    "package:mac": "pnpm build && electron-builder --mac",
+    "package:win": "pnpm build && electron-builder --win",
+    "package:linux": "pnpm build && electron-builder --linux",
+    "package:all": "pnpm build && electron-builder --mac --win --linux"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "firebase": "^12.15.0",
+    "googleapis": "^173.0.0",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-syntax-highlighter": "^15.5.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "esbuild": "^0.28.1",
+    "postcss": "^8.4.0",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "vite-plugin-electron": "^0.28.0",
+    "vite-plugin-electron-renderer": "^0.14.0"
+  }
+}

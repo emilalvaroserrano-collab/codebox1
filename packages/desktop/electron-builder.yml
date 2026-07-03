@@ -1,0 +1,36 @@
+{
+  "appId": "dev.eburon.codebox",
+  "productName": "Eburon Codebox",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.developer-tools",
+    "target": ["dmg", "zip"],
+    "icon": "public/icon.png",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist"
+  },
+  "win": {
+    "target": ["nsis"],
+    "icon": "public/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Development",
+    "icon": "public/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "eburon",
+    "repo": "codebox"
+  }
+}

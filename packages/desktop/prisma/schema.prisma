@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique
+  email       String?
+  name        String?
+  avatarUrl   String?
+  preferences Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  threads  Thread[]
+  memories Memory[]
+  skills   Skill[]
+}
+
+model Thread {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("")
+  mode      String   @default("local")
+  branch    String?
+  projectId String   @default("default")
+  sessionId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  threadId  String
+  role      String
+  content   String
+  code      String?
+  reasoning String?
+  timestamp DateTime @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+}
+
+model Memory {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  project       String   @default("default")
+  content       String
+  confidence    Float    @default(0.5)
+  sourceSession String?
+  accessCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, project])
+}
+
+model Skill {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  description  String    @default("")
+  type         String    @default("custom")
+  enabled      Boolean   @default(true)
+  icon         String?
+  content      String?
+  successCount Int       @default(0)
+  failureCount Int       @default(0)
+  lastUsed     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
